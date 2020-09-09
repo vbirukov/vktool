@@ -1,0 +1,16 @@
+.albumWrapper {
+    display: flex;
+    position: relative;
+}
+
+.albumCover {
+    flex-grow: 1;
+}
+
+.albumTitle {
+    position: absolute;
+    bottom: 1em;
+    margin-left: auto;
+}
+
+
