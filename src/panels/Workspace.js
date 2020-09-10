@@ -25,10 +25,13 @@ class Workspace extends Component {
         };
     }
 
-    getSrc(item) {
-        if (this.state.mode === 'albums') {
-            return item.thumb_src
+    componentDidMount() {
+        if (this.props.mode === 'friends') {
+            //TODO писчитать список мертвых душ и подготовить к удалению
         }
+    }
+
+    getSrc(item) {
         switch (this.state.mode) {
             case 'albums':
                 return item.src;
@@ -46,11 +49,24 @@ class Workspace extends Component {
                     }
                 });
                 return maxSize;
+            case 'users':
+                return item.photo_200_orig;
         }
     }
 
-    getAlbum = async function(albumId) {
-        const album = await this.props.fetchAlbum(albumId);
+    getCaption(item) {
+        switch (this.state.mode) {
+            case 'albums':
+                return item.title;
+            case 'photos':
+                return null;
+            case 'users':
+                return `${item.first_name} ${item.last_name}`
+        }
+    }
+
+    get = async function(albumId) {
+        const album = await this.props.fetchAndReturn(this.props.fetchConfig(albumId));
         this.setState({viewData: album.response.items, mode: 'photos', level: 1});
     }
 
@@ -65,7 +81,7 @@ class Workspace extends Component {
     itemClick(item) {
         switch (this.state.mode) {
             case 'albums':
-                this.getAlbum(item.id);
+                this.get(item.id);
                 break;
             case 'photos':
                 break;
@@ -88,9 +104,9 @@ class Workspace extends Component {
                                      className="albumWrapper"
                                      onClick={() => this.itemClick(item)}
                                      key={index}>
-                            <img className="albumCover" src={this.getSrc(item, this.props.mode)} alt="item.title"/>
+                            <img className="albumCover" src={this.getSrc(item)} alt="item.title"/>
                             <div className="albumTitle">
-                                <p>{item.title}</p>
+                                <p>{this.getCaption(item)}</p>
                             </div>
                         </Card>
                     })}

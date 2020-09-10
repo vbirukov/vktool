@@ -8,7 +8,7 @@ import Cell from '@vkontakte/vkui/dist/components/Cell/Cell';
 import Div from '@vkontakte/vkui/dist/components/Div/Div';
 import Avatar from '@vkontakte/vkui/dist/components/Avatar/Avatar';
 
-const Home = ({ id, go, fetchedUser, fetchAlbums }) => (
+const Home = ({ id, go, fetchedUser, fetchAlbums, fetchFriends }) => (
 	<Panel id={id}>
 		<PanelHeader>VK_TOOL</PanelHeader>
 		{fetchedUser &&
@@ -26,8 +26,11 @@ const Home = ({ id, go, fetchedUser, fetchAlbums }) => (
 				<Button size="xl" level="2" onClick={go} data-to="persik">
 					Show me the Persik, please
 				</Button>
-				<Button size="xl" level="2" onClick={fetchAlbums} data-to="persik">
+				<Button size="xl" level="2" onClick={fetchAlbums}>
 					Get the photos
+				</Button>
+				<Button size="xl" level="2" onClick={fetchFriends}>
+					Get the friends
 				</Button>
 			</Div>
 		</Group>
@@ -37,6 +40,8 @@ const Home = ({ id, go, fetchedUser, fetchAlbums }) => (
 Home.propTypes = {
 	id: PropTypes.string.isRequired,
 	go: PropTypes.func.isRequired,
+	fetchAlbums: PropTypes.func,
+	fetchFriends: PropTypes.func,
 	fetchedUser: PropTypes.shape({
 		photo_200: PropTypes.string,
 		first_name: PropTypes.string,

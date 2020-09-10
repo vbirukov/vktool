@@ -21,8 +21,61 @@ class App extends Component {
 			token: null,
 			viewItems: [],
 			viewMode: 'albums',
-			Popout: <ScreenSpinner size='large' />
+			Popout: <ScreenSpinner size='large' />,
+			callback: {
+				requestId: 0,
+				callback: null
+			}
 		};
+	}
+
+	METHODS_CONFIG = {
+		Albums: (userId) => {
+			return {
+				method: 'photos.getAlbums',
+				params: {
+					"need_covers": true,
+					"user_ids": userId ? userId : this.state.fetchedUser.id
+				},
+				Callback: (response) => {
+					this.setState({
+						viewItems: response.response.items,
+						activePanel: "workspace"
+					});
+				}
+			};
+		},
+		SingleAlbum: (albumId, userId) => {
+			return {
+				method: 'photos.get',
+				params: {
+					album_id: albumId,
+					owner_id: userId ? userId : this.state.fetchedUser.id
+				},
+				Callback: (response) => {
+					this.setState({
+						viewItems: response.response.items,
+						activePanel: "workspace"
+					});
+				}
+			};
+		},
+		Friends: (userId) => {
+			return {
+				method: 'friends.get',
+				params: {
+					fields: 'photo_200_orig, sex, bdate, city, contacts',
+					user_id: userId ? userId : this.state.fetchedUser.id
+				},
+				Callback: (response) => {
+					this.setState({
+						viewItems: response.response.items,
+						activePanel: "workspace",
+						viewMode: 'users'
+					});
+				}
+			};
+		}
 	}
 
 	bridgeEventManager(response) {
@@ -34,6 +87,9 @@ class App extends Component {
 		if (response.detail.type === 'VKWebAppGetAuthTokenResult') {
 			this.setState({token: response.detail.token});
 			console.log(`token set: ${this.state.token}`);
+		}
+		if (response.detail.type === 'VKWebAppCallAPIMethodResult') {
+			this.state.callback(response.detail.data);
 		}
 	}
 
@@ -57,29 +113,16 @@ class App extends Component {
 		this.setState({activePanel: e.currentTarget.dataset.to});
 	}
 
-	fetchAlbums = () => {
-		bridge.send("VKWebAppCallAPIMethod",
-			{
-				"method": "photos.getAlbums",
-				"request_id": "32test",
-				"params": {
-					"need_covers": true,
-					"user_ids": this.state.fetchedUser.id,
-					"v":"5.30",
-					"access_token":this.state.token
-				}
-			})
-			.then((response) => {
-				this.setState({viewItems: response.response.items});
-				this.setState({activePanel: "workspace"});
-			});
+	fetch(Config) {
+		this.setState({callback:Config.Callback});
+		this.sendCommand(Config.method, Config.params).then((response) => {
+			this.setState(Config.state);
+			this.setState({activePanel: "workspace"});
+		});
 	}
 
-	fetchAlbum = albumId => {
-		return this.sendCommand('photos.get', {
-			owner_id: this.state.fetchedUser.id,
-			album_id: albumId
-		})
+	fetchAndReturn = Config => {
+		return this.sendCommand(Config.method, Config.params);
 	}
 
 	sendCommand(method, params) {
@@ -101,7 +144,8 @@ class App extends Component {
 				<Home
 					id='home'
 					fetchedUser={this.state.fetchedUser}
-					fetchAlbums={this.fetchAlbums}
+					fetchAlbums={() => this.fetch(this.METHODS_CONFIG.Albums())}
+					fetchFriends={() => this.fetch(this.METHODS_CONFIG.Friends())}
 					go={this.go}/>
 				<Workspace
 					id='workspace'
@@ -109,7 +153,8 @@ class App extends Component {
 					mode={this.state.viewMode}
 					viewItems={this.state.viewItems}
 					sendAPICommand={this.sendCommand}
-					fetchAlbum={this.fetchAlbum}/>
+					fetchConfig={this.METHODS_CONFIG.SingleAlbum}
+					fetchAndReturn={this.fetchAndReturn}/>
 			</View>
 		);
 	}
