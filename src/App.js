@@ -5,8 +5,7 @@ import ScreenSpinner from '@vkontakte/vkui/dist/components/ScreenSpinner/ScreenS
 import '@vkontakte/vkui/dist/vkui.css';
 
 import Home from './panels/Home';
-import Persik from './panels/Persik';
-import PhView from './panels/Photoview';
+import Workspace from './panels/Workspace';
 
 const APP_ID = 7589784;
 
@@ -77,13 +76,9 @@ class App extends Component {
 	}
 
 	fetchAlbum = albumId => {
-		this.sendCommand('photos.get', {
+		return this.sendCommand('photos.get', {
 			owner_id: this.state.fetchedUser.id,
 			album_id: albumId
-		}).then((response) => {
-			this.setState({viewItems: response.response.items});
-			this.setState({activePanel: "workspace",
-				viewMode: 'photos'});
 		})
 	}
 
@@ -108,12 +103,12 @@ class App extends Component {
 					fetchedUser={this.state.fetchedUser}
 					fetchAlbums={this.fetchAlbums}
 					go={this.go}/>
-				<Persik id='persik' go={this.go}/>
-				<PhView
+				<Workspace
 					id='workspace'
 					go={this.go}
 					mode={this.state.viewMode}
 					viewItems={this.state.viewItems}
+					sendAPICommand={this.sendCommand}
 					fetchAlbum={this.fetchAlbum}/>
 			</View>
 		);
