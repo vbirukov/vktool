@@ -12,6 +12,30 @@ import './Photoview.css';
 
 const osName = platform();
 
+const getSrc = (item, mode) => {
+    if (mode === 'albums') {
+        return item.thumb_src
+    }
+    switch (mode) {
+        case 'albums':
+            return item.src;
+        case 'photos':
+            const sizes = [
+                'photo_75',
+                'photo_130',
+                'photo_604',
+                'photo_807'
+            ];
+            let maxSize;
+            sizes.forEach((sizeField) => {
+                if (item[sizeField]) {
+                    maxSize = item[sizeField];
+                }
+            });
+            return maxSize;
+    }
+}
+
 const PhView = props => (
     <Panel id={props.id}>
         <PanelHeader
@@ -28,7 +52,7 @@ const PhView = props => (
                                  className="albumWrapper"
                                  onClick={() => props.fetchAlbum(item.id)}
                                  key={index}>
-                            <img className="albumCover" src={item.thumb_src} alt="item.title"/>
+                            <img className="albumCover" src={getSrc(item, props.mode)} alt="item.title"/>
                             <div className="albumTitle">
                                 <p>{item.title}</p>
                             </div>
@@ -43,7 +67,8 @@ PhView.propTypes = {
     id: PropTypes.string.isRequired,
     go: PropTypes.func.isRequired,
     viewItems: PropTypes.array,
-    fetchAlbum: PropTypes.func
+    fetchAlbum: PropTypes.func,
+    mode: PropTypes.string
 };
 
 export default PhView;

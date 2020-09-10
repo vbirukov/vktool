@@ -21,6 +21,7 @@ class App extends Component {
 			fetchedUser: null,
 			token: null,
 			viewItems: [],
+			viewMode: 'albums',
 			Popout: <ScreenSpinner size='large' />
 		};
 	}
@@ -71,7 +72,6 @@ class App extends Component {
 			})
 			.then((response) => {
 				this.setState({viewItems: response.response.items});
-				console.log(`albums: ${this.state.albums}`);
 				this.setState({activePanel: "workspace"});
 			});
 	}
@@ -80,6 +80,10 @@ class App extends Component {
 		this.sendCommand('photos.get', {
 			owner_id: this.state.fetchedUser.id,
 			album_id: albumId
+		}).then((response) => {
+			this.setState({viewItems: response.response.items});
+			this.setState({activePanel: "workspace",
+				viewMode: 'photos'});
 		})
 	}
 
@@ -108,6 +112,7 @@ class App extends Component {
 				<PhView
 					id='workspace'
 					go={this.go}
+					mode={this.state.viewMode}
 					viewItems={this.state.viewItems}
 					fetchAlbum={this.fetchAlbum}/>
 			</View>
