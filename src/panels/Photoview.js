@@ -19,18 +19,20 @@ const PhView = props => (
                 {osName === IOS ? <Icon28ChevronBack/> : <Icon24Back/>}
             </PanelHeaderButton>}
         >
-            Photo Albums
+            Workspace
         </PanelHeader>
         <CardGrid>
             {
-                props.albums.map((item, index) => {
-                    return <Card size="l"
-                                 class="albumWrapper"
+                props.viewItems.map((item, index) => {
+                    return <Card size="m"
+                                 className="albumWrapper"
+                                 onClick={() => props.fetchAlbum(item.id)}
                                  key={index}>
-                        <div style={{ height: 96 }}>
                             <img className="albumCover" src={item.thumb_src} alt="item.title"/>
-                            <p className="albumTitle">item.title</p>
-                        </div>
+                            <div className="albumTitle">
+                                <p>{item.title}</p>
+                            </div>
+
                     </Card>
                 })}
         </CardGrid>
@@ -40,7 +42,8 @@ const PhView = props => (
 PhView.propTypes = {
     id: PropTypes.string.isRequired,
     go: PropTypes.func.isRequired,
-    albums: PropTypes.array
+    viewItems: PropTypes.array,
+    fetchAlbum: PropTypes.func
 };
 
 export default PhView;

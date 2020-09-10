@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Component } from 'react';
 import bridge from '@vkontakte/vk-bridge';
 import View from '@vkontakte/vkui/dist/components/View/View';
 import ScreenSpinner from '@vkontakte/vkui/dist/components/ScreenSpinner/ScreenSpinner';
@@ -8,75 +8,111 @@ import Home from './panels/Home';
 import Persik from './panels/Persik';
 import PhView from './panels/Photoview';
 
-const App = () => {
-	const [activePanel, setActivePanel] = useState('home');
-	const [fetchedUser, setUser] = useState(null);
-	const [token, setToken] = useState(null);
-	const [albums, setAlbums] = useState(null);
-	const [popout, setPopout] = useState(<ScreenSpinner size='large' />);
+const APP_ID = 7589784;
 
-	useEffect(() => {
-		bridge.subscribe(({ detail: { type, data }}) => {
-			if (type === 'VKWebAppUpdateConfig') {
-				const schemeAttribute = document.createAttribute('scheme');
-				schemeAttribute.value = data.scheme ? data.scheme : 'client_light';
-				document.body.attributes.setNamedItem(schemeAttribute);
-			}
-		});
+class App extends Component {
 
-		bridge.subscribe((e) => {
-			if (e.detail.type === 'VKWebAppGetAuthTokenResult') {
-				setToken(e);
-				console.log(`token set: ${token}`);
-			}
-		})
+	constructor(props) {
+		super(props);
 
-		async function fetchData() {
-			const user = await bridge.send('VKWebAppGetUserInfo');
-			setUser(user);
-			setPopout(null);
-			bridge.send("VKWebAppGetAuthToken", {"app_id": 7589784, "scope": "photos, video, friends, groups"})
-				.then((response) => {
-					console.log(`got auth responce: ${response}`);
-					setToken(response.access_token);
-				}).catch((e) => {
-					console.log(`error: ${e} `)
-				});
+		this.state = {
+			activePanel:'home',
+			User: {},
+			fetchedUser: null,
+			token: null,
+			viewItems: [],
+			Popout: <ScreenSpinner size='large' />
+		};
+	}
+
+	bridgeEventManager(response) {
+		if (response.detail.type === 'VKWebAppUpdateConfig') {
+			const schemeAttribute = document.createAttribute('scheme');
+			schemeAttribute.value = response.detail.data.scheme ? response.detail.data.scheme : 'client_light';
+			document.body.attributes.setNamedItem(schemeAttribute);
 		}
-		fetchData();
-	}, []);
+		if (response.detail.type === 'VKWebAppGetAuthTokenResult') {
+			this.setState({token: response.detail.token});
+			console.log(`token set: ${this.state.token}`);
+		}
+	}
 
-	const go = e => {
-		setActivePanel(e.currentTarget.dataset.to);
-	};
+	fetchUser = async function() {
+		const user = await bridge.send('VKWebAppGetUserInfo');
+		this.setState({fetchedUser: user});
+		bridge.send("VKWebAppGetAuthToken", {"app_id": APP_ID, "scope": "photos, video, friends, groups"})
+			.then((response) => {
+				this.setState({token: response.access_token});
+			}).catch((e) => {
+			console.log(`error: ${e} `)
+		});
+	}
 
-	async function fetchAlbums() {
-		const photos =  await bridge.send("VKWebAppCallAPIMethod",
+	componentDidMount() {
+		bridge.subscribe((response) => {this.bridgeEventManager(response)});
+		this.fetchUser().then(this.setState({Popout: null}));
+	}
+
+	go = e => {
+		this.setState({activePanel: e.currentTarget.dataset.to});
+	}
+
+	fetchAlbums = () => {
+		bridge.send("VKWebAppCallAPIMethod",
 			{
 				"method": "photos.getAlbums",
 				"request_id": "32test",
 				"params": {
 					"need_covers": true,
-					"user_ids": fetchedUser.id,
+					"user_ids": this.state.fetchedUser.id,
 					"v":"5.30",
-					"access_token":token
+					"access_token":this.state.token
 				}
 			})
 			.then((response) => {
-				setAlbums(response.response.items);
-				console.log(`albums: ${albums}`);
-				setActivePanel("phview");
+				this.setState({viewItems: response.response.items});
+				console.log(`albums: ${this.state.albums}`);
+				this.setState({activePanel: "workspace"});
 			});
-		console.log(`photos ${photos}`);
 	}
 
-	return (
-		<View activePanel={activePanel} popout={popout}>
-			<Home id='home' fetchedUser={fetchedUser} fetchAlbums={fetchAlbums} go={go} />
-			<Persik id='persik' go={go}/>
-			<PhView id='phview' go={go} albums={albums}/>
-		</View>
-	);
+	fetchAlbum = albumId => {
+		this.sendCommand('photos.get', {
+			owner_id: this.state.fetchedUser.id,
+			album_id: albumId
+		})
+	}
+
+	sendCommand(method, params) {
+		return bridge.send("VKWebAppCallAPIMethod",
+			{
+				"method": method,
+				"request_id": "32test",
+				"params": {
+					...params,
+					"v":"5.30",
+					"access_token":this.state.token
+				}
+			})
+	}
+
+	render() {
+		return (
+			<View activePanel={this.state.activePanel} popout={this.state.popout}>
+				<Home
+					id='home'
+					fetchedUser={this.state.fetchedUser}
+					fetchAlbums={this.fetchAlbums}
+					go={this.go}/>
+				<Persik id='persik' go={this.go}/>
+				<PhView
+					id='workspace'
+					go={this.go}
+					viewItems={this.state.viewItems}
+					fetchAlbum={this.fetchAlbum}/>
+			</View>
+		);
+	}
 }
 
 export default App;
